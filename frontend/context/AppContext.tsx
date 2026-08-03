@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, ClientProfile, DatabaseSchema, MedicationRecord, Notification, Delivery, Inquiry, InquiryStatus } from '../types';
-import { getDB, saveDB, logAudit } from '../services/db';
+import { getDB, saveDB, logAudit, syncSharedDB } from '../services/db';
 
 export interface InquiryResponseDetails {
   notes?: string;
@@ -41,6 +41,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (storedUser) {
       setCurrentUser(JSON.parse(storedUser));
     }
+  }, []);
+
+  useEffect(() => {
+    const sync = async () => {
+      const sharedDb = await syncSharedDB();
+      if (sharedDb) setDb(sharedDb);
+    };
+    void sync();
+    const timer = window.setInterval(() => void sync(), 4000);
+    return () => window.clearInterval(timer);
   }, []);
 
   const login = (identifier: string, pass: string, role: 'admin' | 'client') => {
